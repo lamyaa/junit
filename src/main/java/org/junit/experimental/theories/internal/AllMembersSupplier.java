@@ -2,6 +2,8 @@ package org.junit.experimental.theories.internal;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -104,8 +106,7 @@ public class AllMembersSupplier extends ParameterSupplier {
     
     private void addMultiPointFields(ParameterSignature sig, List<PotentialAssignment> list) {
         for (final Field field : getDataPointsFields(sig)) {
-            Class<?> type = field.getType();
-            addDataPointsValues(type, sig, field.getName(), list, getStaticFieldValue(field));
+             addDataPointsValues(field, sig, field.getName(), list, getStaticFieldValue(field));
         }
     }
 
@@ -119,13 +120,29 @@ public class AllMembersSupplier extends ParameterSupplier {
         }
     }
     
+    private void addDataPointsValues(Field field, ParameterSignature sig, String name, 
+            List<PotentialAssignment> list, Object value) {
+	Class<?> type = field.getType();
+        if (type.isArray() && sig.canAcceptType(type.getComponentType())) {
+            addArrayValues(sig, name, list, value);
+        }
+        else if (Iterable.class.isAssignableFrom(type)) {
+	    if (field.getGenericType() instanceof ParameterizedType) {
+		Type[] types = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
+		if (sig.canAcceptType((Class<?>) types[0])) {
+		    addIterableValues(sig, name, list, (Iterable<?>) value);
+		}
+	    }
+        }
+    }
+
     private void addDataPointsValues(Class<?> type, ParameterSignature sig, String name, 
             List<PotentialAssignment> list, Object value) {
         if (type.isArray() && sig.canAcceptType(type.getComponentType())) {
             addArrayValues(sig, name, list, value);
         }
         else if (Iterable.class.isAssignableFrom(type)) {
-            addIterableValues(sig, name, list, (Iterable<?>) value);
+	    addIterableValues(sig, name, list, (Iterable<?>) value);
         }
     }
 
