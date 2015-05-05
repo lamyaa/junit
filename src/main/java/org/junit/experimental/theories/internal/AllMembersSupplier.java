@@ -123,13 +123,13 @@ public class AllMembersSupplier extends ParameterSupplier {
     
     private void addDataPointsValues(Class<?> type, Type genericType, ParameterSignature sig, String name, 
             List<PotentialAssignment> list, Object value) {
-        if (type.isArray() && sig.canAcceptType(type.getComponentType())) {
+        if (type.isArray() && sig.canAcceptOrBeAccepted(type.getComponentType())) {
             addArrayValues(sig, name, list, value);
         }
         else if (Iterable.class.isAssignableFrom(type)) {
 	    if (genericType instanceof ParameterizedType) {
 		Type[] types = ((ParameterizedType) genericType).getActualTypeArguments();
-		if (sig.canAcceptType((Class<?>) types[0])) {
+		if (sig.canAcceptOrBeAccepted((Class<?>) types[0])) {
 		    addIterableValues(sig, name, list, (Iterable<?>) value);
 		}
 	    }
