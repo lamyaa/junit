@@ -113,7 +113,7 @@ public class AllMembersSupplier extends ParameterSupplier {
         for (final Field field : getSingleDataPointFields(sig)) {
             Object value = getStaticFieldValue(field);
             
-            if (sig.canAccepType(field.getType()))) {
+            if (sig.canAcceptType(field.getType())) {
                 list.add(PotentialAssignment.forValue(field.getName(), value));
             }
         }
