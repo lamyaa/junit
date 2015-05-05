@@ -113,7 +113,7 @@ public class AllMembersSupplier extends ParameterSupplier {
         for (final Field field : getSingleDataPointFields(sig)) {
             Object value = getStaticFieldValue(field);
             
-            if (sig.canAcceptValue(value)) {
+            if (sig.canAcceptType(value.getClass())) {
                 list.add(PotentialAssignment.forValue(field.getName(), value));
             }
         }
@@ -121,7 +121,7 @@ public class AllMembersSupplier extends ParameterSupplier {
     
     private void addDataPointsValues(Class<?> type, ParameterSignature sig, String name, 
             List<PotentialAssignment> list, Object value) {
-        if (type.isArray()) {
+        if (type.isArray() && sig.canAcceptType(type.getComponentType())) {
             addArrayValues(sig, name, list, value);
         }
         else if (Iterable.class.isAssignableFrom(type)) {
