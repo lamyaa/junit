@@ -2,6 +2,8 @@ package org.junit.experimental.theories.internal;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -76,11 +78,12 @@ public class AllMembersSupplier extends ParameterSupplier {
     private void addMultiPointMethods(ParameterSignature sig, List<PotentialAssignment> list) throws Throwable {
         for (FrameworkMethod dataPointsMethod : getDataPointsMethods(sig)) {
             Class<?> returnType = dataPointsMethod.getReturnType();
-            
+            Type genericType = dataPointsMethod.getMethod().getGenericReturnType();
+
             if ((returnType.isArray() && sig.canPotentiallyAcceptType(returnType.getComponentType())) ||
                     Iterable.class.isAssignableFrom(returnType)) {
                 try {
-                    addDataPointsValues(returnType, sig, dataPointsMethod.getName(), list, 
+                    addDataPointsValues(returnType, genericType, sig, dataPointsMethod.getName(), list,
                             dataPointsMethod.invokeExplosively(null));
                 } catch (Throwable throwable) {
                     DataPoints annotation = dataPointsMethod.getAnnotation(DataPoints.class);
@@ -104,8 +107,7 @@ public class AllMembersSupplier extends ParameterSupplier {
     
     private void addMultiPointFields(ParameterSignature sig, List<PotentialAssignment> list) {
         for (final Field field : getDataPointsFields(sig)) {
-            Class<?> type = field.getType();
-            addDataPointsValues(type, sig, field.getName(), list, getStaticFieldValue(field));
+	    addDataPointsValues(field.getType(), field.getGenericType(), sig, field.getName(), list, getStaticFieldValue(field));
         }
     }
 
@@ -113,19 +115,24 @@ public class AllMembersSupplier extends ParameterSupplier {
         for (final Field field : getSingleDataPointFields(sig)) {
             Object value = getStaticFieldValue(field);
             
-            if (sig.canAcceptValue(value)) {
+            if (sig.canAcceptType(field.getType())) {
                 list.add(PotentialAssignment.forValue(field.getName(), value));
             }
         }
     }
     
-    private void addDataPointsValues(Class<?> type, ParameterSignature sig, String name, 
+    private void addDataPointsValues(Class<?> type, Type genericType, ParameterSignature sig, String name,
             List<PotentialAssignment> list, Object value) {
-        if (type.isArray()) {
+        if (type.isArray() && sig.canAcceptOrBeAccepted(type.getComponentType()))         {
             addArrayValues(sig, name, list, value);
         }
         else if (Iterable.class.isAssignableFrom(type)) {
-            addIterableValues(sig, name, list, (Iterable<?>) value);
+	     if (genericType instanceof ParameterizedType) {
+		Type[] types = ((ParameterizedType) genericType).getActualTypeArguments();
+		if (sig.canAcceptOrBeAccepted((Class<?>) types[0])) {
+		    addIterableValues(sig, name, list, (Iterable<?>) value);
+		}
+	    }
         }
     }
 

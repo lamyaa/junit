@@ -71,7 +71,16 @@ public class ParameterSignature {
         return type.isAssignableFrom(candidate) ||
                 isAssignableViaTypeConversion(type, candidate);
     }
+
+    public boolean canBeAcceptedByType(Class<?> candidate) {
+        return candidate.isAssignableFrom(type) ||
+	    isAssignableViaTypeConversion(candidate, type);
+    }
     
+    public boolean canAcceptOrBeAccepted(Class<?> candidate) {
+	return canAcceptType(candidate) || canBeAcceptedByType(candidate);
+    }
+
     public boolean canPotentiallyAcceptType(Class<?> candidate) {
         return candidate.isAssignableFrom(type) ||
                 isAssignableViaTypeConversion(candidate, type) ||
