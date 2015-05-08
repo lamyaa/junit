@@ -11,6 +11,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.experimental.theories.internal.Assignments;
 import org.junit.experimental.theories.internal.ParameterizedAssertionError;
+import org.junit.experimental.theories.internal.TheoriesBase;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
@@ -68,96 +69,9 @@ import org.junit.runners.model.TestClass;
  * @see <a href="http://web.archive.org/web/20071012143326/popper.tigris.org/tutorial.html">Archived Popper project documentation</a>
  * @see <a href="http://web.archive.org/web/20110608210825/http://shareandenjoy.saff.net/tdd-specifications.pdf">Paper on Theories</a>
  */
-public class Theories extends BlockJUnit4ClassRunner {
+public class Theories extends TheoriesBase {
     public Theories(Class<?> klass) throws InitializationError {
         super(klass);
-    }
-
-    @Override
-    protected void collectInitializationErrors(List<Throwable> errors) {
-        super.collectInitializationErrors(errors);
-        validateDataPointFields(errors);
-        validateDataPointMethods(errors);
-    }
-
-    private void validateDataPointFields(List<Throwable> errors) {
-        Field[] fields = getTestClass().getJavaClass().getDeclaredFields();
-
-        for (Field field : fields) {
-            if (field.getAnnotation(DataPoint.class) == null && field.getAnnotation(DataPoints.class) == null) {
-                continue;
-            }
-            if (!Modifier.isStatic(field.getModifiers())) {
-                errors.add(new Error("DataPoint field " + field.getName() + " must be static"));
-            }
-            if (!Modifier.isPublic(field.getModifiers())) {
-                errors.add(new Error("DataPoint field " + field.getName() + " must be public"));
-            }
-        }
-    }
-
-    private void validateDataPointMethods(List<Throwable> errors) {
-        Method[] methods = getTestClass().getJavaClass().getDeclaredMethods();
-        
-        for (Method method : methods) {
-            if (method.getAnnotation(DataPoint.class) == null && method.getAnnotation(DataPoints.class) == null) {
-                continue;
-            }
-            if (!Modifier.isStatic(method.getModifiers())) {
-                errors.add(new Error("DataPoint method " + method.getName() + " must be static"));
-            }
-            if (!Modifier.isPublic(method.getModifiers())) {
-                errors.add(new Error("DataPoint method " + method.getName() + " must be public"));
-            }
-        }
-    }
-
-    @Override
-    protected void validateConstructor(List<Throwable> errors) {
-        validateOnlyOneConstructor(errors);
-    }
-
-    @Override
-    protected void validateTestMethods(List<Throwable> errors) {
-        for (FrameworkMethod each : computeTestMethods()) {
-            if (each.getAnnotation(Theory.class) != null) {
-                each.validatePublicVoid(false, errors);
-                each.validateNoTypeParametersOnArgs(errors);
-            } else {
-                each.validatePublicVoidNoArg(false, errors);
-            }
-            
-            for (ParameterSignature signature : ParameterSignature.signatures(each.getMethod())) {
-                ParametersSuppliedBy annotation = signature.findDeepAnnotation(ParametersSuppliedBy.class);
-                if (annotation != null) {
-                    validateParameterSupplier(annotation.value(), errors);
-                }
-            }
-        }
-    }
-
-    private void validateParameterSupplier(Class<? extends ParameterSupplier> supplierClass, List<Throwable> errors) {
-        Constructor<?>[] constructors = supplierClass.getConstructors();
-        
-        if (constructors.length != 1) {
-            errors.add(new Error("ParameterSupplier " + supplierClass.getName() + 
-                                 " must have only one constructor (either empty or taking only a TestClass)"));
-        } else {
-            Class<?>[] paramTypes = constructors[0].getParameterTypes();
-            if (!(paramTypes.length == 0) && !paramTypes[0].equals(TestClass.class)) {
-                errors.add(new Error("ParameterSupplier " + supplierClass.getName() + 
-                                     " constructor must take either nothing or a single TestClass instance"));
-            }
-        }
-    }
-
-    @Override
-    protected List<FrameworkMethod> computeTestMethods() {
-        List<FrameworkMethod> testMethods = new ArrayList<FrameworkMethod>(super.computeTestMethods());
-        List<FrameworkMethod> theoryMethods = getTestClass().getAnnotatedMethods(Theory.class);
-        testMethods.removeAll(theoryMethods);
-        testMethods.addAll(theoryMethods);
-        return testMethods;
     }
 
     @Override
